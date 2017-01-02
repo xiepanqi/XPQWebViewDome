@@ -9,13 +9,12 @@
 	var data = {"title":"测试", 
 		"rightButton":{"icon":"http://www.easyicon.net/api/resizeApi.php?id=1206379&size=128","backCall":"test()"}, 
 		// "navigationColor":{"red":20/255.0, "green":155/255.0, "blue":213/255.0, "alpha":1.0},
-		"backButtonText":"返回",
 		"navigationColor":0x149bd5,
 	};
 	window.webkit.messageHandlers.update.postMessage(data);
 
 	function test() {
-		var pushData = {"url":"https://www.baidu.com", "config":data};
+		var pushData = {"url":"https://www.baidu.com", "config":data, "backButton":"返回按钮",};
 		window.webkit.messageHandlers.push.postMessage(pushData);
 	}
 </script>

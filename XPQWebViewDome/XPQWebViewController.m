@@ -57,8 +57,6 @@ static NSDictionary *s_controllerStyle = nil;
             /* (NSNumer或NSDictionary) 头部颜色。 */
             @"navigationColor":@"jsUpdateNavigationColor:",
             
-            /* (NSString) 返回按钮文本。只在父控制视图设置才生效，并且只要有leftButton则会覆盖backButton */
-            @"backButtonText":@"jsUpdateBackButton:",
             /* (NSArray<NSDictionary>或NSDictionary) navigation左侧按钮，一个或者多个。覆盖bcakButton。
              *  键值：text:按钮文本; icon:按钮图标; systemStyle:系统图标按钮; backCall:回调函数名;
              *  具体参考 -barButtonWithJsData:
@@ -207,19 +205,6 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
-/*  
- *  设置返回按钮文本
- *  @param data NSString类型。
- */
-- (void)jsUpdateBackButton:(id)data {
-    if ([data isKindOfClass:[NSString class]]) {
-        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:data style:UIBarButtonItemStylePlain target:nil action:nil];
-    }
-    else {
-        NSLog(@"XPQWebViewController waring:'jsUpdateBackButton:'参数格式错误，正确格式为NSString");
-    }
-}
-
 /*
  *  更新左侧按钮
  *  @param data 有效类型为NSDictionary和NSArray<NSDictionary *>。
@@ -321,10 +306,12 @@ static NSDictionary *s_controllerStyle = nil;
     if ([data isKindOfClass:[NSDictionary class]] && data[@"url"]) {
         NSURL *url = [NSURL URLWithString:data[@"url"]];
         XPQWebViewController *vc = [[XPQWebViewController alloc] initWithUrl:url];
+        // 设置返回按钮文本
+        if (data[@"backButton"] && [data[@"backButton"] isKindOfClass:[NSString class]]) {
+            self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:data[@"backButton"] style:UIBarButtonItemStylePlain target:nil action:nil];
+        }
+        // 更新一些视图
         if (data[@"config"] && [data[@"config"] isKindOfClass:[NSDictionary class]]) {
-            if (data[@"config"][@"backButton"]) {
-                [self jsUpdateBackButton:data[@"config"][@"backButtonText"]];
-            }
             vc.configDict = data[@"config"];
         }
         [self.navigationController pushViewController:vc animated:YES];

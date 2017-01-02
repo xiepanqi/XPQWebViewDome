@@ -38,10 +38,13 @@ static NSDictionary *s_controllerStyle = nil;
 + (void)load {
     s_jsMethod = @{
 #ifdef DEBUG
+                   /* 打印日志 */
                    @"log":@"jsLog:",
 #endif
-                   @"update":@"updateController:",
-                   @"push":@"pushContoller:"
+                   /* 更新配置内容 */
+                   @"update":@"jsUpdate:",
+                   /* push视图控制器 */
+                   @"push":@"jsPush:"
                    };
     
     s_controllerStyle = @{
@@ -85,7 +88,7 @@ static NSDictionary *s_controllerStyle = nil;
     // Do any additional setup after loading the view.
     _barButtonBackCallArr = [NSMutableArray array];
     if (_configDict) {
-        [self updateController:_configDict];
+        [self jsUpdate:_configDict];
     }
     
     _webView = [[WKWebView alloc] initWithFrame:self.view.bounds];
@@ -131,14 +134,15 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
-#pragma mark - s_jsMethod
+#pragma mark - jsLog
 #ifdef DEBUG
 - (void)jsLog:(id)data {
     NSLog(@"%@", data);
 }
 #endif
 
-- (void)updateController:(NSDictionary *)data {
+#pragma mark - jsUpdate
+- (void)jsUpdate:(NSDictionary *)data {
     if (![data isKindOfClass:[NSDictionary class]]) {
         NSLog(@"XPQWebViewController error:更新控制器数据格式错误。");
         return;
@@ -164,7 +168,10 @@ static NSDictionary *s_controllerStyle = nil;
     }];
 }
 
-/// 更新标题
+/*  
+ *  更新标题
+ *  @param data NSString类型。
+ */
 - (void)jsUpdateTitle:(id)data {
     if ([data isKindOfClass:[NSString class]]) {
         self.navigationItem.title = data;
@@ -174,14 +181,20 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
-/// 更新标题样式
+/*
+ *  更新标题样式(暂未实现)
+ *  @param data
+ */
 - (void)jsUpdateTitleTextAttributes:(id)data {
     if ([data isKindOfClass:[NSDictionary class]]) {
         self.navigationController.navigationBar.titleTextAttributes = data;
     }
 }
 
-/// 更新头部背景色
+/*  
+ *  更新头部背景色
+ *  @param data NSDictionary或NSNumber类型。NSDictionary的键值为{"red","green","blue","alphe"}
+ */
 - (void)jsUpdateNavigationColor:(id)data {
     if ([data isKindOfClass:[NSDictionary class]]) {
         [self.navigationController.navigationBar setBarTintColor:[UIColor colorWithDictionary:data]];
@@ -194,7 +207,10 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
-/// 更新返回按钮
+/*  
+ *  设置返回按钮文本
+ *  @param data NSString类型。
+ */
 - (void)jsUpdateBackButton:(id)data {
     if ([data isKindOfClass:[NSString class]]) {
         self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:data style:UIBarButtonItemStylePlain target:nil action:nil];
@@ -204,7 +220,12 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
-/// 更新左侧按钮
+/*
+ *  更新左侧按钮
+ *  @param data 有效类型为NSDictionary和NSArray<NSDictionary *>。
+                类型为NSDictionary则只一个按钮，如果为NSArray则按钮个数与数组长度相当。
+                NSDictionary中的键值关系请参考 -barButtonWithJsData:
+*/
 - (void)jsUpdateLeftButton:(id)data {
     if ([data isKindOfClass:[NSDictionary class]]) {
         self.navigationItem.leftBarButtonItem = [self barButtonWithJsData:data];
@@ -221,7 +242,12 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
-/// 更新右侧按钮
+/*
+ *  更新右侧按钮
+ *  @param data 有效类型为NSDictionary和NSArray<NSDictionary *>。
+                类型为NSDictionary则只一个按钮，如果为NSArray则按钮个数与数组长度相当。
+                NSDictionary中的键值关系请参考 -barButtonWithJsData:
+ */
 - (void)jsUpdateRightButton:(id)data {
     if ([data isKindOfClass:[NSDictionary class]]) {
         self.navigationItem.rightBarButtonItem = [self barButtonWithJsData:data];
@@ -240,7 +266,7 @@ static NSDictionary *s_controllerStyle = nil;
 
 /*
  *  根据数据生成barButton。
- *  @param  data 按钮相关数据。
+ *  @param data 按钮相关数据。
                 |    key      |        type       |              explain          |
                 | systemStyle | NSNumber/NSString | 生成系统自带图标按钮，            |
                 |             |                   | 传UIBarButtonSystemItem的枚举值 |
@@ -290,7 +316,8 @@ static NSDictionary *s_controllerStyle = nil;
     }];
 }
 
-- (void)pushContoller:(NSDictionary *)data {
+#pragma mark - jsPush
+- (void)jsPush:(NSDictionary *)data {
     if ([data isKindOfClass:[NSDictionary class]] && data[@"url"]) {
         NSURL *url = [NSURL URLWithString:data[@"url"]];
         XPQWebViewController *vc = [[XPQWebViewController alloc] initWithUrl:url];

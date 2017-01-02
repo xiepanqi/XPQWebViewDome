@@ -46,17 +46,20 @@ static NSDictionary *s_controllerStyle = nil;
                    };
     
     s_controllerStyle = @{
-            /* (NSString *)视图控制器标题。 */
+            /* (NSString) 视图控制器标题。 */
             @"title":@"jsUpdateTitle:",
             
 //            /* (NSDictionary *)视图控制器标题样式，可以指定字体，文字颜色，阴影等，键值参考'NSAttributedString.h'。 */
 //            @"titleTextAttributes":@"jsUpdateTitleTextAttributes:",
             
-            /* (NSNumer 或 NSDictionary)头部颜色。 */
+            /* (NSNumer或NSDictionary) 头部颜色。 */
             @"navigationColor":@"jsUpdateNavigationColor:",
             
-            /* (NSArray<NSDictionary *>* 或者 NSDictionary) navigation左侧按钮，一个或者多个。
-             *  键值：text:按钮文本; icon:按钮图标; backCall:回调函数名;
+            /* (NSString) 返回按钮文本。只在父控制视图设置才生效，并且只要有leftButton则会覆盖backButton */
+            @"backButtonText":@"jsUpdateBackButton:",
+            /* (NSArray<NSDictionary>或NSDictionary) navigation左侧按钮，一个或者多个。覆盖bcakButton。
+             *  键值：text:按钮文本; icon:按钮图标; systemStyle:系统图标按钮; backCall:回调函数名;
+             *  具体参考 -barButtonWithJsData:
              */
             @"leftButton":@"jsUpdateLeftButton:"
                           };
@@ -86,6 +89,7 @@ static NSDictionary *s_controllerStyle = nil;
     }
     [self.view addSubview:_webView];
     [_webView loadRequest:[NSURLRequest requestWithURL:_url]];
+    
     
 //    self.navigationController.navigationBarHidden = YES;
 }
@@ -203,21 +207,52 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
+/// 更新返回按钮
+- (void)jsUpdateBackButton:(id)data {
+    if ([data isKindOfClass:[NSString class]]) {
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:data style:UIBarButtonItemStylePlain target:nil action:nil];
+    }
+    else {
+        NSLog(@"XPQWebViewController waring:'jsUpdateBackButton:'参数格式错误，正确格式为NSString");
+    }
+}
+
 /// 更新左侧按钮
 - (void)jsUpdateLeftButton:(id)data {
     if ([data isKindOfClass:[NSDictionary class]]) {
-        UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:data[@"text"] style:UIBarButtonItemStylePlain target:self action:@selector(clickButton:)];
-        self.navigationItem.leftBarButtonItem = button;
+        self.navigationItem.leftBarButtonItem = [self barButtonWithJsData:data];
     }
     else if ([data isKindOfClass:[NSArray<NSDictionary *> class]]) {
-        
+        NSMutableArray *buttons = [NSMutableArray array];
+        for (NSDictionary *dict in data) {
+            [buttons addObject:[self barButtonWithJsData:dict]];
+        }
+        self.navigationItem.leftBarButtonItems = buttons;
     }
     else {
         NSLog(@"XPQWebViewController waring:'jsUpdateLeftButton:'参数格式错误，正确格式为NSDictionary或者NSArray<NSDictionary *>");
     }
 }
 
-- (void) clickButton:(id)sender {
+- (UIBarButtonItem *)barButtonWithJsData:(NSDictionary *)data {
+    if (data[@"systemStyle"]
+        && ([data[@"systemStyle"] isKindOfClass:[NSNumber class]]
+            || [data[@"systemStyle"] isKindOfClass:[NSString class]])) {
+        return [[UIBarButtonItem alloc] initWithBarButtonSystemItem:[data[@"systemStyle"] integerValue] target:self action:@selector(clickBarButton:)];
+    }
+    else if (data[@"icon"] && [data[@"icon"] isKindOfClass:[NSString class]]) {
+//        UIButton
+        return nil;
+    }
+    else if (data[@"text"] && [data[@"text"] isKindOfClass:[NSString class]]) {
+        return [[UIBarButtonItem alloc] initWithTitle:data[@"text"] style:UIBarButtonItemStylePlain target:self action:@selector(clickBarButton:)];
+    }
+    else {
+        return nil;
+    }
+}
+
+- (void) clickBarButton:(id)sender {
     
 }
 @end

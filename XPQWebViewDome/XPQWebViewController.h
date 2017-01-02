@@ -8,6 +8,9 @@
 
 #import <UIKit/UIKit.h>
 
+/*
+ *  依赖第三方开源库：SDWebImage(https://github.com/rs/SDWebImage)
+ */
 @interface XPQWebViewController : UIViewController
 
 - (instancetype)initWithUrl:(NSURL *)url;

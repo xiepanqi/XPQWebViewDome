@@ -10,23 +10,19 @@
 
 #import "WKWebView+XPQAdd.h"
 #import "UIColor+XPQAdd.h"
+
+#import "UIButton+WebCache.h"
+
 #import <WebKit/WebKit.h>
 
-/// (NSString *)视图控制器标题。
-#define kXPQWebViewControllerTitle                  @"title"
-///// (NSDictionary *)视图控制器标题样式，可以指定字体，文字颜色，阴影等，键值参考'NSAttributedString.h'
-//#define kXPQWebViewControllerTitleTextAttributes    @"titleTextAttributes"
-/// (NSNumer 或 NSDictionary)
-#define kXPQWebViewControllerNavigationColor        @"navigationColor"
-
-/* (NSArray<NSDictionary *>* 或者 NSDictionary) navigation左侧按钮，一个或者多个。
- *  键值：text:按钮文本; icon:按钮图标; backCall:回调函数名;
- */
-#define kXPQWebViewControllerLeftButton             @"leftButton"
+#define BarButtonTag        7000
 
 @interface XPQWebViewController () <WKNavigationDelegate, WKScriptMessageHandler>
 
 @property (nonatomic, strong) WKWebView *webView;
+
+/// navigationItem按钮的回调JS
+@property (nonatomic, strong) NSMutableArray<NSString *> *barButtonBackCallArr;
 
 @end
 
@@ -61,7 +57,9 @@ static NSDictionary *s_controllerStyle = nil;
              *  键值：text:按钮文本; icon:按钮图标; systemStyle:系统图标按钮; backCall:回调函数名;
              *  具体参考 -barButtonWithJsData:
              */
-            @"leftButton":@"jsUpdateLeftButton:"
+            @"leftButton":@"jsUpdateLeftButton:",
+            /* (NSArray<NSDictionary>或NSDictionary) navigation右侧按钮，格式同leftButton。 */
+            @"rightButton":@"jsUpdateRightButton:"
                           };
 }
 
@@ -82,6 +80,8 @@ static NSDictionary *s_controllerStyle = nil;
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
+    _barButtonBackCallArr = [NSMutableArray array];
+    
     _webView = [[WKWebView alloc] initWithFrame:self.view.bounds];
     _webView.navigationDelegate = self;
     for (NSString *methodName in s_jsMethod.allKeys) {
@@ -234,25 +234,62 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
+/// 更新右侧按钮
+- (void)jsUpdateRightButton:(id)data {
+    if ([data isKindOfClass:[NSDictionary class]]) {
+        self.navigationItem.rightBarButtonItem = [self barButtonWithJsData:data];
+    }
+    else if ([data isKindOfClass:[NSArray<NSDictionary *> class]]) {
+        NSMutableArray *buttons = [NSMutableArray array];
+        for (NSDictionary *dict in data) {
+            [buttons addObject:[self barButtonWithJsData:dict]];
+        }
+        self.navigationItem.rightBarButtonItems = buttons;
+    }
+    else {
+        NSLog(@"XPQWebViewController waring:'jsUpdateLeftButton:'参数格式错误，正确格式为NSDictionary或者NSArray<NSDictionary *>");
+    }
+}
+
 - (UIBarButtonItem *)barButtonWithJsData:(NSDictionary *)data {
     if (data[@"systemStyle"]
-        && ([data[@"systemStyle"] isKindOfClass:[NSNumber class]]
-            || [data[@"systemStyle"] isKindOfClass:[NSString class]])) {
-        return [[UIBarButtonItem alloc] initWithBarButtonSystemItem:[data[@"systemStyle"] integerValue] target:self action:@selector(clickBarButton:)];
+        && ([data[@"systemStyle"] isKindOfClass:[NSNumber class]] || [data[@"systemStyle"] isKindOfClass:[NSString class]])) {
+        UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:[data[@"systemStyle"] integerValue] target:self action:@selector(clickBarButton:)];
+        if (data[@"backCall"] && [data[@"backCall"] isKindOfClass:[NSString class]]) {
+            button.tag = BarButtonTag + _barButtonBackCallArr.count;
+            [_barButtonBackCallArr addObject:data[@"backCall"]];
+        }
+        return button;
     }
     else if (data[@"icon"] && [data[@"icon"] isKindOfClass:[NSString class]]) {
-//        UIButton
-        return nil;
+        UIButton *button = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 36, 36)];
+        [button sd_setImageWithURL:[NSURL URLWithString:data[@"icon"]] forState:UIControlStateNormal];
+        if (data[@"backCall"] && [data[@"backCall"] isKindOfClass:[NSString class]]) {
+            [button addTarget:self action:@selector(clickBarButton:) forControlEvents:UIControlEventTouchUpInside];
+            button.tag = BarButtonTag + _barButtonBackCallArr.count;
+            [_barButtonBackCallArr addObject:data[@"backCall"]];
+        }
+        return [[UIBarButtonItem alloc] initWithCustomView:button];
     }
     else if (data[@"text"] && [data[@"text"] isKindOfClass:[NSString class]]) {
-        return [[UIBarButtonItem alloc] initWithTitle:data[@"text"] style:UIBarButtonItemStylePlain target:self action:@selector(clickBarButton:)];
+        UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:data[@"text"] style:UIBarButtonItemStylePlain target:self action:@selector(clickBarButton:)];
+        if (data[@"backCall"] && [data[@"backCall"] isKindOfClass:[NSString class]]) {
+            button.tag = BarButtonTag + _barButtonBackCallArr.count;
+            [_barButtonBackCallArr addObject:data[@"backCall"]];
+        }
+        return button;
     }
     else {
         return nil;
     }
 }
 
-- (void) clickBarButton:(id)sender {
-    
+- (void)clickBarButton:(id)sender {
+    NSString *jsName = _barButtonBackCallArr[[sender tag] - BarButtonTag];
+    [_webView evaluateJavaScript:jsName completionHandler:^(id _Nullable data, NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"XPQWebViewController waring:UIBarButtonItem回调JS失败，%@", error);
+        }
+    }];
 }
 @end

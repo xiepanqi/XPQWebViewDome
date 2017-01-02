@@ -17,9 +17,11 @@
 
 #define BarButtonTag        7000
 
-@interface XPQWebViewController () <WKNavigationDelegate, WKScriptMessageHandler>
+@interface XPQWebViewController () <WKScriptMessageHandler>
 
 @property (nonatomic, strong) WKWebView *webView;
+
+@property (nonatomic, strong) NSDictionary *configDict;
 
 /// navigationItem按钮的回调JS
 @property (nonatomic, strong) NSMutableArray<NSString *> *barButtonBackCallArr;
@@ -38,7 +40,8 @@ static NSDictionary *s_controllerStyle = nil;
 #ifdef DEBUG
                    @"log":@"jsLog:",
 #endif
-                   @"update":@"updateController:"
+                   @"update":@"updateController:",
+                   @"push":@"pushContoller:"
                    };
     
     s_controllerStyle = @{
@@ -81,9 +84,11 @@ static NSDictionary *s_controllerStyle = nil;
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     _barButtonBackCallArr = [NSMutableArray array];
+    if (_configDict) {
+        [self updateController:_configDict];
+    }
     
     _webView = [[WKWebView alloc] initWithFrame:self.view.bounds];
-    _webView.navigationDelegate = self;
     for (NSString *methodName in s_jsMethod.allKeys) {
         [_webView addScriptName:methodName andDelegate:self];
     }
@@ -108,24 +113,6 @@ static NSDictionary *s_controllerStyle = nil;
     // Pass the selected object to the new view controller.
 }
 */
-
-#pragma mark - WKNavigationDelegate
-- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    if ([navigationAction.request.URL.absoluteString hasPrefix:@"push:"]) {
-        decisionHandler(WKNavigationActionPolicyCancel);
-        NSString *urlStr = [navigationAction.request.URL.absoluteString substringFromIndex:5];
-        XPQWebViewController *vc = [[XPQWebViewController alloc] initWithUrl:[NSURL URLWithString:urlStr]];
-        [self.navigationController pushViewController:vc animated:YES];
-    }
-    else {
-        decisionHandler(WKNavigationActionPolicyAllow);
-    }
-}
-
-- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSLog(@"加载完成");
-}
-
 
 #pragma mark - WKScriptMessageHandler
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {
@@ -251,6 +238,16 @@ static NSDictionary *s_controllerStyle = nil;
     }
 }
 
+/*
+ *  根据数据生成barButton。
+ *  @param  data 按钮相关数据。
+                |    key      |        type       |              explain          |
+                | systemStyle | NSNumber/NSString | 生成系统自带图标按钮，            |
+                |             |                   | 传UIBarButtonSystemItem的枚举值 |
+                |    icon     |      NSString     | 传图片URL生成一个图标按钮         |
+                |    text     |      NSString     | 生成一个文本按钮                 |
+                |  backCall   |      NSString     | 按钮回调JS代码                  |
+ */
 - (UIBarButtonItem *)barButtonWithJsData:(NSDictionary *)data {
     if (data[@"systemStyle"]
         && ([data[@"systemStyle"] isKindOfClass:[NSNumber class]] || [data[@"systemStyle"] isKindOfClass:[NSString class]])) {
@@ -291,5 +288,19 @@ static NSDictionary *s_controllerStyle = nil;
             NSLog(@"XPQWebViewController waring:UIBarButtonItem回调JS失败，%@", error);
         }
     }];
+}
+
+- (void)pushContoller:(NSDictionary *)data {
+    if ([data isKindOfClass:[NSDictionary class]] && data[@"url"]) {
+        NSURL *url = [NSURL URLWithString:data[@"url"]];
+        XPQWebViewController *vc = [[XPQWebViewController alloc] initWithUrl:url];
+        if (data[@"config"] && [data[@"config"] isKindOfClass:[NSDictionary class]]) {
+            if (data[@"config"][@"backButton"]) {
+                [self jsUpdateBackButton:data[@"config"][@"backButtonText"]];
+            }
+            vc.configDict = data[@"config"];
+        }
+        [self.navigationController pushViewController:vc animated:YES];
+    }
 }
 @end

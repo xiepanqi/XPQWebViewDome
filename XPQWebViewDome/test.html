@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>测试</title>
+</head>
+<body>
+<script type="text/javascript">
+	console.log("test");
+	window.webkit.messageHandlers.log.postMessage("test");
+	var data = {"title":"测试", 
+		"leftButton":{"text":"左"}, 
+		// "navigationColor":{"red":20/255.0, "green":155/255.0, "blue":213/255.0, "alpha":1.0},
+		"navigationColor":0x149bd5,
+	};
+	window.webkit.messageHandlers.update.postMessage(data);
+</script>
+<div style="background: #f00;height: 100px;">
+	test
+</div>
+</body>
+</html>

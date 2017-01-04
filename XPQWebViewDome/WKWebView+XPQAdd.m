@@ -53,3 +53,52 @@
     [self.configuration.userContentController removeScriptMessageHandlerForName:name];
 }
 @end
+
+@implementation WKWebView (callJS)
+
++ (NSString *)jsCodeWithMethodName:(NSString *)method, ... {
+    NSMutableString *jsCode = method.mutableCopy;
+    [jsCode appendString:@"("];
+    
+    va_list args;
+    va_start(args, method);
+    
+    id param = nil;
+    while ((param = va_arg(args, id))) {
+        if ([param isKindOfClass:[NSString class]]) {
+            [jsCode appendString:@"'"];
+            [jsCode appendString:jsStrConver(param)];
+            [jsCode appendString:@"'"];
+        }
+        else if ([param isKindOfClass:[NSNumber class]]) {
+            [jsCode appendString:[param stringValue]];
+        }
+        else if ([param isKindOfClass:[NSArray class]]
+              || [param isKindOfClass:[NSDictionary class]]) {
+            NSData *data = [NSJSONSerialization dataWithJSONObject:param options:kNilOptions error:nil];
+            NSString *json = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+            [jsCode appendString:json];
+        }
+        else {
+            
+        }
+        [jsCode appendString:@","];
+    }
+    
+    va_end(args);
+    
+    if ([jsCode hasSuffix:@","]) {
+        [jsCode replaceCharactersInRange:NSMakeRange(jsCode.length - 1, 1) withString:@")"];
+    }
+    return jsCode;
+}
+
+@end
+
+NSString* jsStrConver(NSString *str)
+{
+    str = [str stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
+    str = [str stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
+    str = [str stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
+    return str;
+}

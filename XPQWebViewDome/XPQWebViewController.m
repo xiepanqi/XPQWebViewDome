@@ -252,12 +252,15 @@ static NSDictionary *s_controllerStyle = nil;
 /*
  *  根据数据生成barButton。
  *  @param data 按钮相关数据。
-                |    key      |        type       |              explain          |
-                | systemStyle | NSNumber/NSString | 生成系统自带图标按钮，            |
-                |             |                   | 传UIBarButtonSystemItem的枚举值 |
-                |    icon     |      NSString     | 传图片URL生成一个图标按钮         |
-                |    text     |      NSString     | 生成一个文本按钮                 |
-                |  backCall   |      NSString     | 按钮回调JS代码                  |
+    +-------------+-------------------+-------------------------------+
+    |    key      |        type       |              explain          |
+    +-------------+-------------------+-------------------------------+
+    | systemStyle | NSNumber/NSString | 生成系统自带图标按钮，            |
+    |             |                   | 传UIBarButtonSystemItem的枚举值 |
+    |    icon     |      NSString     | 传图片URL生成一个图标按钮         |
+    |    text     |      NSString     | 生成一个文本按钮                 |
+    |  backCall   |      NSString     | 按钮回调JS代码                  |
+    +-------------+-------------------+-------------------------------+
  */
 - (UIBarButtonItem *)barButtonWithJsData:(NSDictionary *)data {
     if (data[@"systemStyle"]

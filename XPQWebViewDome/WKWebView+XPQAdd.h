@@ -31,3 +31,20 @@
  */
 - (void)removeScriptName:(NSString *)name;
 @end
+
+@interface WKWebView (callJS)
+
+/*
+ *  根据js方法名和参数拼接成js代码
+ *  @param  method 方法名
+ *  @param  ...  参数，支持类型有NSString/NSNumber/NSArray/NSDictionry。必须以nil结尾，不然会报错。
+ *  @return 拼接好后的JS代码
+ */
++ (NSString *)jsCodeWithMethodName:(NSString *)method, ...;
+
+@end
+
+/*
+ *  js方法字符串参数对' " \转义
+ */
+NSString* jsStrConver(NSString *str);
